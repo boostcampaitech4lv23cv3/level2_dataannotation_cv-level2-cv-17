@@ -1,0 +1,133 @@
+{
+    "id": 695,
+    "image": {
+        "id": 695,
+        "low": "http://15.165.231.120:5001/image/5ef10021e2dd455da482cf43384101ad/low-quality.jpg",
+        "thumb": "http://15.165.231.120:5001/image/5ef10021e2dd455da482cf43384101ad/thumb.jpg",
+        "raw": "http://15.165.231.120:5001/image/5ef10021e2dd455da482cf43384101ad/raw",
+        "path": "http://15.165.231.120:5001/image/5ef10021e2dd455da482cf43384101ad",
+        "filename": "20210910_141434.jpg",
+        "priority": 0,
+        "created_at": "2022-12-02T18:04:18.888048+09:00",
+        "updated_at": "2022-12-02T18:04:18.888084+09:00"
+    },
+    "prev_task_rejected": false,
+    "status": "InProgress",
+    "created_at": "2022-12-02T18:04:18.888752+09:00",
+    "updated_at": "2022-12-07T21:43:47.513714+09:00",
+    "result_data": {
+        "ocr": {
+            "image": {
+                "attributes": [],
+                "inspectionComments": []
+            },
+            "items": [
+                {
+                    "kind": "word",
+                    "id": "P5Keb",
+                    "selected": false,
+                    "drawing": false,
+                    "points": [
+                        {
+                            "x": 48.04829394426342,
+                            "y": 507.0775199083678
+                        },
+                        {
+                            "x": 128.7770678537172,
+                            "y": 507.0775199083678
+                        },
+                        {
+                            "x": 128.7770678537172,
+                            "y": 528.7161603377058
+                        },
+                        {
+                            "x": 48.04829394426342,
+                            "y": 528.7161603377058
+                        }
+                    ],
+                    "language": [
+                        "KO"
+                    ],
+                    "orientation": "Horizontal",
+                    "inspectionComments": [],
+                    "text": "스크린 타임",
+                    "attributes": [],
+                    "parentId": ""
+                },
+                {
+                    "kind": "word",
+                    "id": "wJUXe",
+                    "selected": false,
+                    "drawing": false,
+                    "points": [
+                        {
+                            "x": 49.712804746520234,
+                            "y": 463.8002390496914
+                        },
+                        {
+                            "x": 138.76413266725785,
+                            "y": 463.8002390496914
+                        },
+                        {
+                            "x": 138.76413266725785,
+                            "y": 489.6001564846716
+                        },
+                        {
+                            "x": 49.712804746520234,
+                            "y": 489.6001564846716
+                        }
+                    ],
+                    "language": [
+                        "KO"
+                    ],
+                    "orientation": "Horizontal",
+                    "inspectionComments": [],
+                    "text": "방해금지 모드 ",
+                    "attributes": [],
+                    "parentId": ""
+                },
+                {
+                    "kind": "word",
+                    "id": "F3TvA",
+                    "selected": false,
+                    "drawing": false,
+                    "points": [
+                        {
+                            "x": 231.14448219250892,
+                            "y": 340.6264396826899
+                        },
+                        {
+                            "x": 500.79523215810684,
+                            "y": 340.6264396826899
+                        },
+                        {
+                            "x": 500.79523215810684,
+                            "y": 391.39401915152166
+                        },
+                        {
+                            "x": 231.14448219250892,
+                            "y": 391.39401915152166
+                        }
+                    ],
+                    "language": [
+                        "KO"
+                    ],
+                    "orientation": "Horizontal",
+                    "inspectionComments": [],
+                    "text": "블로그한경닷컴  ",
+                    "attributes": [
+                        "워터마크"
+                    ],
+                    "parentId": ""
+                }
+            ],
+            "slicedItems": {}
+        },
+        "parsing": []
+    },
+    "result_action": "None",
+    "bookmarked": false,
+    "stage": 1,
+    "user": 52,
+    "prev_task": null
+}

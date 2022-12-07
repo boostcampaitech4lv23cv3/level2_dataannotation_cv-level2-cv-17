@@ -1,45 +1,61 @@
+from typing import Tuple
+
+import albumentations as A
+import lanms
 import numpy as np
 import torch
-import lanms
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 from albumentations.augmentations.geometric.resize import LongestMaxSize
+from albumentations.pytorch import ToTensorV2
 
 from dataset import get_rotate_mat
+from logger import get_logger
+
+logger = get_logger()
 
 
-def is_valid_poly(res, score_shape, scale):
-    '''check if the poly in image scope
+def is_valid_poly(res, score_shape, scale) -> bool:
+    """check if the poly in image scope
+
     Input:
         res        : restored poly in original image
         score_shape: score map shape
         scale      : feature map -> image
+
     Output:
         True if valid
-    '''
-    cnt = 0
-    for i in range(res.shape[1]):
-        if (res[0, i] < 0 or res[0, i] >= score_shape[1] * scale or res[1, i] < 0 or
-            res[1, i] >= score_shape[0] * scale):
-            cnt += 1
+    """
+    logger.info(f"is_valid_poly({type(res)}, {type(score_shape)}, {type(scale)})")
+    cnt = sum(
+        res[0, i] < 0
+        or res[0, i] >= score_shape[1] * scale
+        or res[1, i] < 0
+        or res[1, i] >= score_shape[0] * scale
+        for i in range(res.shape[1])
+    )
+
     return cnt <= 1
 
 
-def restore_polys(valid_pos, valid_geo, score_shape, scale=4):
-    '''restore polys from feature maps in given positions
-    Input:
-        valid_pos  : potential text positions <numpy.ndarray, (n,2)>
-        valid_geo  : geometry in valid_pos <numpy.ndarray, (5,n)>
-        score_shape: shape of score map
-        scale      : image / feature map
-    Output:
-        restored polys <numpy.ndarray, (n,8)>, index
-    '''
-    polys = []
-    index = []
+def restore_polys(
+    valid_pos: np.ndarray, valid_geo: np.ndarray, score_shape: tuple, scale: int = 4
+) -> Tuple[np.ndarray, list]:
+    """Restore polys from feature maps in given positions
+
+    Args:
+        valid_pos (_type_): potential text positions <numpy.ndarray, (n,2)>
+        valid_geo (_type_): geometry in valid_pos <numpy.ndarray, (5,n)>
+        score_shape (_type_): shape of score map
+        scale (int, optional): image / feature map. Defaults to 4.
+
+    Returns:
+        Tuple[np.ndarray, list]: restored polys <numpy.ndarray, (n,8)>, index
+          - polys (np.ndarray): restored polys <numpy.ndarray, (n,8)>
+          - index (list): index list
+    """
+    polys, index = [], []
     valid_pos *= scale
-    d = valid_geo[:4, :] # 4 x N
-    angle = valid_geo[4, :] # N,
+    d = valid_geo[:4, :]  # 4 x N
+    angle = valid_geo[4, :]  # N,
 
     for i in range(valid_pos.shape[0]):
         x = valid_pos[i, 0]
@@ -59,13 +75,23 @@ def restore_polys(valid_pos, valid_geo, score_shape, scale=4):
 
         if is_valid_poly(res, score_shape, scale):
             index.append(i)
-            polys.append([res[0, 0], res[1, 0], res[0, 1], res[1, 1], res[0, 2], res[1, 2],
-                          res[0, 3], res[1, 3]])
+            polys.append(
+                [
+                    res[0, 0],
+                    res[1, 0],
+                    res[0, 1],
+                    res[1, 1],
+                    res[0, 2],
+                    res[1, 2],
+                    res[0, 3],
+                    res[1, 3],
+                ]
+            )
     return np.array(polys), index
 
 
 def get_bboxes(score, geo, score_thresh=0.9, nms_thresh=0.2):
-    '''get boxes from feature map
+    """get boxes from feature map
     Input:
         score       : score map from model <numpy.ndarray, (1,row,col)>
         geo         : geo map from model <numpy.ndarray, (5,row,col)>
@@ -73,9 +99,14 @@ def get_bboxes(score, geo, score_thresh=0.9, nms_thresh=0.2):
         nms_thresh  : threshold in nms
     Output:
         boxes       : final polys <numpy.ndarray, (n,9)>
-    '''
+    """
+    logger.info(
+        f"get_bboxes({type(score)}, {type(geo)},",
+        f"{type(score_thresh)}, {type(nms_thresh)})",
+    )
+
     score = score[0, :, :]
-    xy_text = np.argwhere(score > score_thresh) # n x 2, format is [r, c]
+    xy_text = np.argwhere(score > score_thresh)  # n x 2, format is [r, c]
     if xy_text.size == 0:
         return None
 
@@ -89,21 +120,30 @@ def get_bboxes(score, geo, score_thresh=0.9, nms_thresh=0.2):
     boxes = np.zeros((polys_restored.shape[0], 9), dtype=np.float32)
     boxes[:, :8] = polys_restored
     boxes[:, 8] = score[xy_text[index, 0], xy_text[index, 1]]
-    boxes = lanms.merge_quadrangle_n9(boxes.astype('float32'), nms_thresh)
+    boxes = lanms.merge_quadrangle_n9(boxes.astype("float32"), nms_thresh)
     return boxes
 
 
 def detect(model, images, input_size):
-    prep_fn = A.Compose([
-        LongestMaxSize(input_size), A.PadIfNeeded(min_height=input_size, min_width=input_size,
-                                                  position=A.PadIfNeeded.PositionType.TOP_LEFT),
-        A.Normalize(), ToTensorV2()])
+    logger.info(f"detect({type(model)}, {type(images)}, {type(input_size)})")
+    prep_fn = A.Compose(
+        [
+            LongestMaxSize(input_size),
+            A.PadIfNeeded(
+                min_height=input_size,
+                min_width=input_size,
+                position=A.PadIfNeeded.PositionType.TOP_LEFT,
+            ),
+            A.Normalize(),
+            ToTensorV2(),
+        ]
+    )
     device = list(model.parameters())[0].device
 
     batch, orig_sizes = [], []
     for image in images:
         orig_sizes.append(image.shape[:2])
-        batch.append(prep_fn(image=image)['image'])
+        batch.append(prep_fn(image=image)["image"])
     batch = torch.stack(batch, dim=0).to(device)
 
     with torch.no_grad():
@@ -112,11 +152,19 @@ def detect(model, images, input_size):
 
     by_sample_bboxes = []
     for score_map, geo_map, orig_size in zip(score_maps, geo_maps, orig_sizes):
-        map_margin = int(abs(orig_size[0] - orig_size[1]) * 0.25 * input_size / max(orig_size))
+        map_margin = int(
+            abs(orig_size[0] - orig_size[1]) * 0.25 * input_size / max(orig_size)
+        )
         if orig_size[0] > orig_size[1]:
-            score_map, geo_map = score_map[:, :, :-map_margin], geo_map[:, :, :-map_margin]
+            score_map, geo_map = (
+                score_map[:, :, :-map_margin],
+                geo_map[:, :, :-map_margin],
+            )
         else:
-            score_map, geo_map = score_map[:, :-map_margin, :], geo_map[:, :-map_margin, :]
+            score_map, geo_map = (
+                score_map[:, :-map_margin, :],
+                geo_map[:, :-map_margin, :],
+            )
 
         bboxes = get_bboxes(score_map, geo_map)
         if bboxes is None:

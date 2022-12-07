@@ -1,12 +1,19 @@
 import math
+from dataclasses import dataclass
 
-import torch
-import numpy as np
 import cv2
+import numpy as np
+import torch
+from rich import print
 from torch.utils.data import Dataset
 
+from dataset import SceneTextDataset
+from logger import get_logger
 
-def shrink_bbox(bbox, coef=0.3, inplace=False):
+logger = get_logger()
+
+
+def shrink_bbox(bbox: np.ndarray, coef: float = 0.3, inplace: bool = False):
     lens = [np.linalg.norm(bbox[i] - bbox[(i + 1) % 4], ord=2) for i in range(4)]
     r = [min(lens[(i - 1) % 4], lens[i]) for i in range(4)]
 
@@ -25,7 +32,8 @@ def shrink_bbox(bbox, coef=0.3, inplace=False):
     return bbox
 
 
-def get_rotated_coords(h, w, theta, anchor):
+def get_rotated_coords(h: int, w: int, theta: np.float64, anchor: np.ndarray):
+    # logger.info(f"get_rotated_coords({type(h)}, {type(w)}, {type(theta)}, {type(anchor)})")
     anchor = anchor.reshape(2, 1)
     rotate_mat = get_rotate_mat(theta)
     x, y = np.meshgrid(np.arange(w), np.arange(h))
@@ -38,24 +46,28 @@ def get_rotated_coords(h, w, theta, anchor):
     return rotated_x, rotated_y
 
 
-def get_rotate_mat(theta):
-    return np.array([[math.cos(theta), -math.sin(theta)],
-                     [math.sin(theta), math.cos(theta)]])
+def get_rotate_mat(theta: np.float64):
+    return np.array(
+        [[math.cos(theta), -math.sin(theta)], [math.sin(theta), math.cos(theta)]]
+    )
 
 
-def calc_error_from_rect(bbox):
-    '''
+def calc_error_from_rect(bbox: np.ndarray):
+    """
     Calculate the difference between the vertices orientation and default orientation. Default
     orientation is x1y1 : left-top, x2y2 : right-top, x3y3 : right-bot, x4y4 : left-bot
-    '''
+    """
+    # logger.info(f"calc_error_from_rect({type(bbox)})")
     x_min, y_min = np.min(bbox, axis=0)
     x_max, y_max = np.max(bbox, axis=0)
-    rect = np.array([[x_min, y_min], [x_max, y_min], [x_max, y_max], [x_min, y_max]],
-                    dtype=np.float32)
+    rect = np.array(
+        [[x_min, y_min], [x_max, y_min], [x_max, y_max], [x_min, y_max]],
+        dtype=np.float32,
+    )
     return np.linalg.norm(bbox - rect, axis=0).sum()
 
 
-def rotate_bbox(bbox, theta, anchor=None):
+def rotate_bbox(bbox: np.ndarray, theta: np.float64, anchor=None):
     points = bbox.T
     if anchor is None:
         anchor = points[:, :1]
@@ -63,9 +75,8 @@ def rotate_bbox(bbox, theta, anchor=None):
     return rotated_points.T
 
 
-def find_min_rect_angle(bbox, rank_num=10):
-    '''Find the best angle to rotate poly and obtain min rectangle
-    '''
+def find_min_rect_angle(bbox: np.ndarray, rank_num: int = 10):
+    """Find the best angle to rotate poly and obtain min rectangle"""
     areas = []
     angles = np.arange(-90, 90) / 180 * math.pi
     for theta in angles:
@@ -74,7 +85,7 @@ def find_min_rect_angle(bbox, rank_num=10):
         x_max, y_max = np.max(rotated_bbox, axis=0)
         areas.append((x_max - x_min) * (y_max - y_min))
 
-    best_angle, min_error = -1, float('inf')
+    best_angle, min_error = -1, float("inf")
     for idx in np.argsort(areas)[:rank_num]:
         rotated_bbox = rotate_bbox(bbox, angles[idx])
         error = calc_error_from_rect(rotated_bbox)
@@ -84,7 +95,9 @@ def find_min_rect_angle(bbox, rank_num=10):
     return best_angle
 
 
-def generate_score_geo_maps(image, word_bboxes, map_scale=0.25):
+def generate_score_geo_maps(
+    image: np.ndarray, word_bboxes: np.ndarray, map_scale: float = 0.25
+):
     img_h, img_w = image.shape[:2]
     map_h, map_w = int(img_h * map_scale), int(img_w * map_scale)
     inv_scale = int(1 / map_scale)
@@ -126,17 +139,30 @@ def generate_score_geo_maps(image, word_bboxes, map_scale=0.25):
     return score_map, geo_map
 
 
+# @dataclass
+# class EASTDataset(Dataset):
+#     dataset: Dataset
+#     map_scale: float = 0.25
+#     to_tensor: bool = True
+
+
 class EASTDataset(Dataset):
-    def __init__(self, dataset, map_scale=0.25, to_tensor=True):
+    def __init__(
+        self, dataset: SceneTextDataset, map_scale: float = 0.25, to_tensor: bool = True
+    ):
         self.dataset = dataset
         self.map_scale = map_scale
         self.to_tensor = to_tensor
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int):
         image, word_bboxes, roi_mask = self.dataset[idx]
-        score_map, geo_map = generate_score_geo_maps(image, word_bboxes, map_scale=self.map_scale)
+        score_map, geo_map = generate_score_geo_maps(
+            image, word_bboxes, map_scale=self.map_scale
+        )
 
-        mask_size = int(image.shape[0] * self.map_scale), int(image.shape[1] * self.map_scale)
+        mask_size = int(image.shape[0] * self.map_scale), int(
+            image.shape[1] * self.map_scale
+        )
         roi_mask = cv2.resize(roi_mask, dsize=mask_size)
         if roi_mask.ndim == 2:
             roi_mask = np.expand_dims(roi_mask, axis=2)

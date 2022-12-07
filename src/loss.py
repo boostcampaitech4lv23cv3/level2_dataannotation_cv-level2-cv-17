@@ -1,14 +1,20 @@
 import torch
 import torch.nn as nn
 
+from logger import get_logger
 
-def get_dice_loss(gt_score, pred_score):
+logger = get_logger()
+
+
+def get_dice_loss(gt_score: torch.Tensor, pred_score: torch.Tensor):
+    # logger.info(f"get_dice_loss({type(gt_score)}, {type(pred_score)})")
     inter = torch.sum(gt_score * pred_score)
     union = torch.sum(gt_score) + torch.sum(pred_score) + 1e-5
-    return 1. - (2 * inter / union)
+    return 1.0 - (2 * inter / union)
 
 
-def get_geo_loss(gt_geo, pred_geo):
+def get_geo_loss(gt_geo: torch.Tensor, pred_geo: torch.Tensor):
+    # logger.info(f"get_geo_loss({type(gt_geo)}, {type(pred_geo)})")
     d1_gt, d2_gt, d3_gt, d4_gt, angle_gt = torch.split(gt_geo, 1, 1)
     d1_pred, d2_pred, d3_pred, d4_pred, angle_pred = torch.split(pred_geo, 1, 1)
     area_gt = (d1_gt + d2_gt) * (d3_gt + d4_gt)
@@ -27,7 +33,14 @@ class EASTLoss(nn.Module):
         super().__init__()
         self.weight_angle = weight_angle
 
-    def forward(self, gt_score, pred_score, gt_geo, pred_geo, roi_mask):
+    def forward(
+        self,
+        gt_score: torch.Tensor,
+        pred_score: torch.Tensor,
+        gt_geo: torch.Tensor,
+        pred_geo: torch.Tensor,
+        roi_mask: torch.Tensor,
+    ):
         if torch.sum(gt_score) < 1:
             return torch.sum(pred_score + pred_geo) * 0
 
@@ -40,5 +53,8 @@ class EASTLoss(nn.Module):
         geo_loss = angle_loss + iou_loss
         total_loss = classify_loss + geo_loss
 
-        return total_loss, dict(cls_loss=classify_loss.item(), angle_loss=angle_loss.item(),
-                                iou_loss=iou_loss.item())
+        return total_loss, dict(
+            cls_loss=classify_loss.item(),
+            angle_loss=angle_loss.item(),
+            iou_loss=iou_loss.item(),
+        )

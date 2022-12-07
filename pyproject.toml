@@ -1,0 +1,22 @@
+[project]
+name = "titanic_ml"
+description = "titanic_ml example package"
+version = "0.1.0"
+authors = [
+    { name = "Niels Zeilemaker", email = "nielszeilemaker@godatadriven.com" },
+]
+dependencies = ["pyspark[ml]", "sklearn"]
+
+[project.optional-dependencies]
+dev = ["tox", "pre-commit", "bump2version"]
+packages = [{ include = "src" }]
+
+[tool.poetry]
+packages = [{ include = "my_package" }, { include = "extra_package/**/*.py" }]
+
+[tool.autoflake]
+check = true
+imports = ["django", "requests", "urllib3"]
+
+[tool.black]
+line_length = 88
