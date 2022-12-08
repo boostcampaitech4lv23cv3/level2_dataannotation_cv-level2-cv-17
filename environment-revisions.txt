@@ -156,3 +156,23 @@
     +rich-12.6.0 (conda-forge/noarch)
     +shellingham-1.5.0 (conda-forge/noarch)
     +typer-0.7.0 (conda-forge/noarch)
+
+2022-12-08 13:27:38  (rev 12)
+     ca-certificates  {2022.9.24 (conda-forge/linux-64) -> 2022.12.7 (conda-forge/linux-64)}
+     certifi  {2022.9.24 (conda-forge/noarch) -> 2022.12.7 (conda-forge/noarch)}
+    +brotli-python-1.0.9 (conda-forge/linux-64)
+    +dash-2.7.0 (conda-forge/noarch)
+    +flask-2.2.2 (conda-forge/noarch)
+    +flask-compress-1.13 (conda-forge/noarch)
+    +itsdangerous-2.1.2 (conda-forge/noarch)
+    +jinja2-3.1.2 (conda-forge/noarch)
+    +markupsafe-2.1.1 (conda-forge/linux-64)
+    +plotly-5.11.0 (conda-forge/noarch)
+    +tenacity-8.1.0 (conda-forge/noarch)
+    +werkzeug-2.2.2 (conda-forge/noarch)
+
+2022-12-08 13:28:19  (rev 13)
+     plotly  {5.11.0 (conda-forge/noarch) -> 5.11.0 (plotly/noarch)}
+
+2022-12-08 13:29:13  (rev 14)
+    +plotly_express-0.4.1 (plotly/noarch)
