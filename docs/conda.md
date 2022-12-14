@@ -34,3 +34,8 @@ conda create env -f environment.yml
 ```shell
 conda env remove -n boostcamp
 ```
+
+### conda 용량 정리하기
+```bash
+conda clean --yes --all
+```
