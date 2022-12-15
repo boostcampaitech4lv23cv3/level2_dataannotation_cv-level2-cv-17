@@ -1,0 +1,25 @@
+{
+    "[python]": {
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        },
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true,
+        "editor.formatOnType": true
+    },
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true
+    },
+    "editor.formatOnSave": true,
+    "files.exclude": {
+        "**/.git": false
+    },
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "mmdetection/mmdet/*/**": false
+    },
+    "git.ignoreLimitWarning": true,
+    "python.formatting.provider": "black",
+    "terminal.integrated.scrollback": 100000
+}
