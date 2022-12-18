@@ -19,7 +19,7 @@ def parse_args():
         "--ratio",
         type=float,
         default=0.125,
-        help="ratio of the distance of point moved to the square root of the bounding box area",
+        help="ratio of the distance of point moved to the square root of the bbox area",
     )
     parser.add_argument(
         "--suffix",
@@ -55,7 +55,12 @@ def get_polygon_area(points):
 
 
 def shift_point(point, width, height, sigma):
-    clip = lambda x, max: 0 if x < 0 else max if x > max else x
+    def clip(x, max):
+        if x < 0:
+            return 0
+        else:
+            return max if x > max else x
+
     dist = np.random.normal(0, sigma)
     theta = np.random.uniform(0, 2 * math.pi)
 
@@ -80,7 +85,7 @@ def shake_bbox(points, width, height, ratio=0.125):
 
 
 def do_shaking(anno_path, ratio, suffix):
-    ufo = json.load(open(anno_path, "r"))
+    ufo = json.load(open(anno_path))
 
     for image_name in tqdm(ufo["images"]):
         image = ufo["images"][image_name]
