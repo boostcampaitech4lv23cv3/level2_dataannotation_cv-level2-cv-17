@@ -1,0 +1,28 @@
+name: pre-commit
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, closed]
+  push:
+    branches: [main]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+
+    # https://github.com/actions/checkout
+    - uses: actions/checkout@v3
+
+    # https://github.com/actions/setup-python
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.7'
+
+    # https://github.com/marketplace/actions/pre-commit
+    # https://github.com/cloudposse/github-action-pre-commit
+    - uses: pre-commit/action@v3.0.0
+      with:
+        extra_args: --color=always --from-ref ${{ github.event.pull_request.base.sha }} --to-ref ${{ github.event.pull_request.head.sha }}
+    # https://github.com/pre-commit/action/issues/7

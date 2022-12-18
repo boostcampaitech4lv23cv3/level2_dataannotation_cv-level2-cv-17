@@ -1,0 +1,51 @@
+name: pre-commit
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, closed]
+  push:
+    branches: [main]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+
+    # https://github.com/actions/checkout
+    - uses: actions/checkout@v3
+
+    # https://github.com/actions/setup-python
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.7'
+
+    # https://github.com/trilom/file-changes-action
+    # https://github.com/pre-commit/action/issues/7#issuecomment-669149713
+    # https://github.com/pre-commit/action/issues/7#issuecomment-884570441
+    - id: file_changes
+      uses: trilom/file-changes-action@v1.2.4
+      with:
+        output: 'space'
+
+    - name: Show File Changes
+      run: |
+        echo 'files.json'
+        cat $HOME/files.json
+        echo 'files_modified.json'
+        cat $HOME/files_modified.json
+        echo 'files_added.json'
+        cat $HOME/files_added.json
+        echo 'files_removed.json'
+        cat $HOME/files_removed.json
+        echo '${{ steps.file_changes.outputs.files}}'
+        echo '${{ steps.file_changes.outputs.files_modified}}'
+        echo '${{ steps.file_changes.outputs.files_added}}'
+        echo '${{ steps.file_changes.outputs.files_removed}}'
+
+    # https://github.com/marketplace/actions/pre-commit
+    # https://github.com/cloudposse/github-action-pre-commit
+    - uses: pre-commit/action@v3.0.0
+      with:
+        extra_args: --files ${{ steps.file_changes.outputs.files}}
+    # https://github.com/pre-commit/action/issues/7
