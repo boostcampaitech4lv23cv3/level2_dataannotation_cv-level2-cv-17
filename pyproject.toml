@@ -1,0 +1,32 @@
+[project]
+name = "level2_dataannotation_cv-level2-cv-17"
+description = "부스트캠프 AI Tech 4기 / Level 2 CV 17조 / Sixth Sense 팀의 데이터 제작 프로젝트"
+version = "0.1.0"
+authors = [
+    { name = "서장원_T4105", email = "jangwon.seo@snu.ac.kr" },
+    { name = "박세준_T4105", email = "jangwon.seo@snu.ac.kr" },
+    { name = "박선규_T4105", email = "jangwon.seo@snu.ac.kr" },
+    { name = "조태환_T4105", email = "jangwon.seo@snu.ac.kr" },
+    { name = "장국빈_T4105", email = "jangwon.seo@snu.ac.kr" },
+    { name = "이광민_T4105", email = "jangwon.seo@snu.ac.kr" },
+]
+dependencies = ["pyspark[ml]", "sklearn"]
+
+[project.optional-dependencies]
+dev = ["tox", "pre-commit", "bump2version"]
+
+[tool.black]
+line_length = 88
+color = true
+target-version = ['py37']
+
+[tool.isort]
+profile = "black"
+py_version = 37
+atomic = true
+float_to_top = true
+color_output = true
+
+[tool.autoflake]
+check = true
+imports = ["django", "requests", "urllib3"]
