@@ -45,7 +45,11 @@ def get_polygon_centroid(points):
 
 
 def expand_bbox(points, ratio, width, height):
-    clip = lambda x, max: 0 if x < 0 else max if x > max else x
+    def clip(x, max):
+        if x < 0:
+            return 0
+        else:
+            return max if x > max else x
 
     center = get_polygon_centroid(points)
 
@@ -61,7 +65,7 @@ def expand_bbox(points, ratio, width, height):
 
 
 def do_expansion(anno_path, ratio, suffix):
-    ufo = json.load(open(anno_path, "r"))
+    ufo = json.load(open(anno_path))
 
     for image_name in tqdm(ufo["images"]):
         image = ufo["images"][image_name]
