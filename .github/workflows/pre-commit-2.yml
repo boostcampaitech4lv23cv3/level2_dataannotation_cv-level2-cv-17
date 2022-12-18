@@ -1,11 +1,11 @@
-name: pre-commit
+name: pre-commit-2
 
 on:
   pull_request:
-    branches: [main]
+    branches: [master]
     types: [opened, synchronize, closed]
   push:
-    branches: [main]
+    branches: [master]
 
 jobs:
   pre-commit:
@@ -30,22 +30,26 @@ jobs:
 
     - name: Show File Changes
       run: |
-        echo 'files.json'
+        echo -e 'files.json'
         cat $HOME/files.json
-        echo 'files_modified.json'
+        echo -e '\nfiles_modified.json\n'
         cat $HOME/files_modified.json
-        echo 'files_added.json'
+        echo -e '\nfiles_added.json'
         cat $HOME/files_added.json
         echo 'files_removed.json'
         cat $HOME/files_removed.json
-        echo '${{ steps.file_changes.outputs.files}}'
-        echo '${{ steps.file_changes.outputs.files_modified}}'
-        echo '${{ steps.file_changes.outputs.files_added}}'
-        echo '${{ steps.file_changes.outputs.files_removed}}'
+        echo '${{ steps.file_changes.outputs.files }}'
+        echo '${{ steps.file_changes.outputs.files_modified }}'
+        echo '${{ steps.file_changes.outputs.files_added }}'
+        echo '${{ steps.file_changes.outputs.files_removed }}'
+
+    - name: steps.file_changes.outputs.files
+      run: |
+        echo '${{ steps.file_changes.outputs.files }}'
 
     # https://github.com/marketplace/actions/pre-commit
     # https://github.com/cloudposse/github-action-pre-commit
     - uses: pre-commit/action@v3.0.0
       with:
-        extra_args: --files ${{ steps.file_changes.outputs.files}}
+        extra_args: --files ${{ steps.file_changes.outputs.files }}
     # https://github.com/pre-commit/action/issues/7
