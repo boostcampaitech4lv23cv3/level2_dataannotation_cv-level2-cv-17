@@ -7,7 +7,7 @@ import torch.nn as nn
 def get_dice_loss(gt_score, pred_score):
     inter = torch.sum(gt_score * pred_score)
     union = torch.sum(gt_score) + torch.sum(pred_score) + 1e-5
-    return 1. - (2 * inter / union)
+    return 1.0 - (2 * inter / union)
 
 
 def get_geo_loss(gt_geo, pred_geo):
@@ -42,5 +42,8 @@ class EASTLoss(nn.Module):
         geo_loss = angle_loss + iou_loss
         total_loss = classify_loss + geo_loss
 
-        return total_loss, dict(cls_loss=classify_loss.item(), angle_loss=angle_loss.item(),
-                                iou_loss=iou_loss.item())
+        return total_loss, dict(
+            cls_loss=classify_loss.item(),
+            angle_loss=angle_loss.item(),
+            iou_loss=iou_loss.item(),
+        )
