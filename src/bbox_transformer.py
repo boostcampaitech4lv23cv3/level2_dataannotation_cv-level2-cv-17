@@ -44,10 +44,10 @@ def rotate_bbox(bbox, theta, anchor=None):
 def calc_error_from_rect(bbox):
     """Calculate the difference between the vertices orientation and default orientation
 
-    Default orientation is 
-        x1y1 : left-top, 
-        x2y2 : right-top, 
-        x3y3 : right-bot, 
+    Default orientation is
+        x1y1 : left-top,
+        x2y2 : right-top,
+        x3y3 : right-bot,
         x4y4 : left-bot.
     """
     x_min, y_min = np.min(bbox, axis=0)
