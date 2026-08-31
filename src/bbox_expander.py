@@ -61,7 +61,7 @@ def expand_bbox(points, ratio, width, height):
 
 
 def do_expansion(anno_path, ratio, suffix):
-    ufo = json.load(open(anno_path, "r"))
+    ufo = json.load(open(anno_path))
 
     for image_name in tqdm(ufo["images"]):
         image = ufo["images"][image_name]
