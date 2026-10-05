@@ -1,12 +1,21 @@
+import albumentations as A
+import cv2
+import numpy as np
 import numpy.random as npr
 from albumentations.pytorch import ToTensorV2
 from shapely.geometry import Polygon
-import albumentations as A
-import numpy as np
-import cv2
 
-def transform_by_matrix(matrix, image=None, oh=None, ow=None, word_bboxes=[],
-                        by_word_char_bboxes=[], masks=[], inverse=False):
+
+def transform_by_matrix(
+    matrix,
+    image=None,
+    oh=None,
+    ow=None,
+    word_bboxes=[],
+    by_word_char_bboxes=[],
+    masks=[],
+    inverse=False,
+):
     """
     Args:
         matrix (ndarray): (3, 3) shaped transformation matrix.
@@ -27,36 +36,52 @@ def transform_by_matrix(matrix, image=None, oh=None, ow=None, word_bboxes=[],
         matrix = np.linalg.pinv(matrix)
 
     if image is not None:
-        output_dict['image'] = cv2.warpPerspective(image, matrix, dsize=(ow, oh))
+        output_dict["image"] = cv2.warpPerspective(image, matrix, dsize=(ow, oh))
 
     if word_bboxes is None:
-        output_dict['word_bboxes'] = None
+        output_dict["word_bboxes"] = None
     elif len(word_bboxes) > 0:
         num_points = list(map(len, word_bboxes))
-        points = np.concatenate([np.reshape(bbox, (-1, 2)) for bbox in word_bboxes])  # (N, 2)
+        points = np.concatenate(
+            [np.reshape(bbox, (-1, 2)) for bbox in word_bboxes]
+        )  # (N, 2)
         points = cv2.perspectiveTransform(
-            np.reshape(points, (1, -1, 2)).astype(np.float32), matrix).reshape(-1, 2)  # (N, 2)
-        output_dict['word_bboxes'] = [
-            points[i:i + n] for i, n in zip(np.cumsum([0] + num_points)[:-1], num_points)]
+            np.reshape(points, (1, -1, 2)).astype(np.float32), matrix
+        ).reshape(
+            -1, 2
+        )  # (N, 2)
+        output_dict["word_bboxes"] = [
+            points[i : i + n]
+            for i, n in zip(np.cumsum([0] + num_points)[:-1], num_points)
+        ]
     else:
-        output_dict['word_bboxes'] = []
+        output_dict["word_bboxes"] = []
 
     if by_word_char_bboxes is None:
-        output_dict['by_word_char_bboxes'] = None
+        output_dict["by_word_char_bboxes"] = None
     elif len(by_word_char_bboxes) > 0:
         word_lens = list(map(len, by_word_char_bboxes))
-        points = np.concatenate([np.reshape(bboxes, (-1, 2)) for bboxes in by_word_char_bboxes])  # (N, 2)
+        points = np.concatenate(
+            [np.reshape(bboxes, (-1, 2)) for bboxes in by_word_char_bboxes]
+        )  # (N, 2)
         points = cv2.perspectiveTransform(
-            np.reshape(points, (1, -1, 2)).astype(np.float32), matrix).reshape(-1, 4, 2)  # (N, 4, 2)
-        output_dict['by_word_char_bboxes'] = [
-            points[i:i + n] for i, n in zip(np.cumsum([0] + word_lens)[:-1], word_lens)]
+            np.reshape(points, (1, -1, 2)).astype(np.float32), matrix
+        ).reshape(
+            -1, 4, 2
+        )  # (N, 4, 2)
+        output_dict["by_word_char_bboxes"] = [
+            points[i : i + n]
+            for i, n in zip(np.cumsum([0] + word_lens)[:-1], word_lens)
+        ]
     else:
-        output_dict['by_word_char_bboxes'] = []
+        output_dict["by_word_char_bboxes"] = []
 
     if masks is None:
-        output_dict['masks'] = None
+        output_dict["masks"] = None
     else:
-        output_dict['masks'] = [cv2.warpPerspective(mask, matrix, dsize=(ow, oh)) for mask in masks]
+        output_dict["masks"] = [
+            cv2.warpPerspective(mask, matrix, dsize=(ow, oh)) for mask in masks
+        ]
 
     return output_dict
 
@@ -65,13 +90,25 @@ class GeoTransformation:
     """
     Args:
     """
+
     def __init__(
         self,
-        rotate_anchors=None, rotate_range=None,
-        crop_aspect_ratio=None, crop_size=0.5, crop_size_by='longest', hflip=False, vflip=False,
-        random_translate=False, min_image_overlap=0, min_bbox_overlap=0, min_bbox_count=0,
+        rotate_anchors=None,
+        rotate_range=None,
+        crop_aspect_ratio=None,
+        crop_size=0.5,
+        crop_size_by="longest",
+        hflip=False,
+        vflip=False,
+        random_translate=False,
+        min_image_overlap=0,
+        min_bbox_overlap=0,
+        min_bbox_count=0,
         allow_partial_occurrence=True,
-        resize_to=None, keep_aspect_ratio=False, resize_based_on='longest', max_random_trials=100
+        resize_to=None,
+        keep_aspect_ratio=False,
+        resize_based_on="longest",
+        max_random_trials=100,
     ):
         if rotate_anchors is None:
             self.rotate_anchors = None
@@ -108,7 +145,7 @@ class GeoTransformation:
         else:
             raise TypeError
 
-        assert crop_size_by in ['width', 'height', 'longest']
+        assert crop_size_by in ["width", "height", "longest"]
         self.crop_size_by = crop_size_by
 
         self.hflip, self.vflip = hflip, vflip
@@ -133,12 +170,19 @@ class GeoTransformation:
             assert not keep_aspect_ratio
             assert type(resize_to[0]) == type(resize_to[1])
             self.resize_to = tuple(resize_to)
-        assert resize_based_on in ['width', 'height', 'longest']
-        self.keep_aspect_ratio, self.resize_based_on = keep_aspect_ratio, resize_based_on
+        assert resize_based_on in ["width", "height", "longest"]
+        self.keep_aspect_ratio, self.resize_based_on = (
+            keep_aspect_ratio,
+            resize_based_on,
+        )
 
     def __call__(self, image, word_bboxes=[], by_word_char_bboxes=[], masks=[]):
-        return self.crop_rotate_resize(image, word_bboxes=word_bboxes,
-                                       by_word_char_bboxes=by_word_char_bboxes, masks=masks)
+        return self.crop_rotate_resize(
+            image,
+            word_bboxes=word_bboxes,
+            by_word_char_bboxes=by_word_char_bboxes,
+            masks=masks,
+        )
 
     def _get_theta(self):
         if self.rotate_anchors is None:
@@ -151,8 +195,11 @@ class GeoTransformation:
         return theta
 
     def _get_patch_size(self, ih, iw):
-        if (self.crop_aspect_ratio is None and isinstance(self.crop_size, float) and
-            self.crop_size == 1.0):
+        if (
+            self.crop_aspect_ratio is None
+            and isinstance(self.crop_size, float)
+            and self.crop_size == 1.0
+        ):
             return ih, iw
 
         if self.crop_aspect_ratio is None:
@@ -170,7 +217,7 @@ class GeoTransformation:
         else:
             crop_size = self.crop_size
 
-        if self.crop_size_by == 'longest' and iw >= ih or self.crop_size_by == 'width':
+        if self.crop_size_by == "longest" and iw >= ih or self.crop_size_by == "width":
             if isinstance(crop_size, int):
                 pw = crop_size
                 ph = int(pw / aspect_ratio)
@@ -190,7 +237,9 @@ class GeoTransformation:
     def _get_patch_quad(self, theta, ph, pw):
         cos, sin = np.cos(theta * np.pi / 180), np.sin(theta * np.pi / 180)
         hpx, hpy = 0.5 * pw, 0.5 * ph  # half patch size
-        quad = np.array([[-hpx, -hpy], [hpx, -hpy], [hpx, hpy], [-hpx, hpy]], dtype=np.float32)
+        quad = np.array(
+            [[-hpx, -hpy], [hpx, -hpy], [hpx, hpy], [-hpx, hpy]], dtype=np.float32
+        )
         rotation_m = np.array([[cos, sin], [-sin, cos]], dtype=np.float32)
         quad = np.matmul(quad, rotation_m)  # patch quadrilateral in relative coords
 
@@ -200,9 +249,11 @@ class GeoTransformation:
         image_poly = Polygon([[0, 0], [iw, 0], [iw, ih], [0, ih]])
         if self.min_image_overlap is not None:
             center_patch_poly = Polygon(
-                np.array([0.5 * ih, 0.5 * iw], dtype=np.float32) + patch_quad_rel)
+                np.array([0.5 * ih, 0.5 * iw], dtype=np.float32) + patch_quad_rel
+            )
             max_available_overlap = (
-                image_poly.intersection(center_patch_poly).area / center_patch_poly.area)
+                image_poly.intersection(center_patch_poly).area / center_patch_poly.area
+            )
             min_image_overlap = min(self.min_image_overlap, max_available_overlap)
         else:
             min_image_overlap = None
@@ -212,37 +263,51 @@ class GeoTransformation:
         else:
             min_bbox_count = 0
 
-        cx_margin, cy_margin = np.sort(patch_quad_rel[:, 0])[2], np.sort(patch_quad_rel[:, 1])[2]
+        cx_margin, cy_margin = (
+            np.sort(patch_quad_rel[:, 0])[2],
+            np.sort(patch_quad_rel[:, 1])[2],
+        )
 
         found_randomly = False
         for trial_idx in range(self.max_random_trials):
-            cx, cy = npr.uniform(cx_margin, iw - cx_margin), npr.uniform(cy_margin, ih - cy_margin)
+            cx, cy = npr.uniform(cx_margin, iw - cx_margin), npr.uniform(
+                cy_margin, ih - cy_margin
+            )
             patch_quad = np.array([cx, cy], dtype=np.float32) + patch_quad_rel
             patch_poly = Polygon(patch_quad)
-            
+
             if min_image_overlap:
-                image_overlap = patch_poly.intersection(image_poly).area / patch_poly.area
+                image_overlap = (
+                    patch_poly.intersection(image_poly).area / patch_poly.area
+                )
                 # 이미지에서 벗어난 영역이 특정 비율보다 높으면 탈락
                 if image_overlap < min_image_overlap:
                     continue
 
-            if (self.min_bbox_count or not self.allow_partial_occurrence) and self.min_bbox_overlap:
+            if (
+                self.min_bbox_count or not self.allow_partial_occurrence
+            ) and self.min_bbox_overlap:
                 bbox_count = 0
                 partial_occurrence = False
-                
+
                 for bbox in bboxes:
                     bbox_poly = Polygon(bbox).buffer(0.001)
                     if bbox_poly.area <= 0:
                         continue
-                    
-                    bbox_overlap = bbox_poly.intersection(patch_poly).area / bbox_poly.area
+
+                    bbox_overlap = (
+                        bbox_poly.intersection(patch_poly).area / bbox_poly.area
+                    )
                     if bbox_overlap >= self.min_bbox_overlap:
                         bbox_count += 1
-                    if (not self.allow_partial_occurrence and bbox_overlap > 0 and
-                        bbox_overlap < self.min_bbox_overlap):
+                    if (
+                        not self.allow_partial_occurrence
+                        and bbox_overlap > 0
+                        and bbox_overlap < self.min_bbox_overlap
+                    ):
                         partial_occurrence = True
                         break
-                
+
                 # 부분적으로 나타나는 개체가 있으면 탈락
                 if partial_occurrence:
                     continue
@@ -258,7 +323,9 @@ class GeoTransformation:
         else:
             return None, trial_idx + 1
 
-    def crop_rotate_resize(self, image, word_bboxes=[], by_word_char_bboxes=[], masks=[]):
+    def crop_rotate_resize(
+        self, image, word_bboxes=[], by_word_char_bboxes=[], masks=[]
+    ):
         """
         Args:
             image (ndarray): (H, W, C) shaped ndarray.
@@ -276,29 +343,54 @@ class GeoTransformation:
             patch_quad = np.array([cx, cy], dtype=np.float32) + patch_quad_rel
             num_trials = 0
         else:
-            patch_quad, num_trials = self._get_located_patch_quad(ih, iw, patch_quad_rel,
-                                                                  bboxes=word_bboxes)
+            patch_quad, num_trials = self._get_located_patch_quad(
+                ih, iw, patch_quad_rel, bboxes=word_bboxes
+            )
 
-        vflip, hflip = self.vflip and npr.randint(2) > 0, self.hflip and npr.randint(2) > 0
+        vflip, hflip = (
+            self.vflip and npr.randint(2) > 0,
+            self.hflip and npr.randint(2) > 0,
+        )
 
         if self.resize_to is None:
             oh, ow = ih, iw
         elif self.keep_aspect_ratio:  # `resize_to`: Union[int, float]
-            if self.resize_based_on == 'height' or self.resize_based_on == 'longest' and ih >= iw:
-                oh = ih * self.resize_to if isinstance(self.resize_to, float) else self.resize_to
+            if (
+                self.resize_based_on == "height"
+                or self.resize_based_on == "longest"
+                and ih >= iw
+            ):
+                oh = (
+                    ih * self.resize_to
+                    if isinstance(self.resize_to, float)
+                    else self.resize_to
+                )
                 ow = int(oh * iw / ih)
             else:
-                ow = iw * self.resize_to if isinstance(self.resize_to, float) else self.resize_to
+                ow = (
+                    iw * self.resize_to
+                    if isinstance(self.resize_to, float)
+                    else self.resize_to
+                )
                 oh = int(ow * ih / iw)
         elif isinstance(self.resize_to[0], float):  # `resize_to`: tuple[float, float]
             oh, ow = ih * self.resize_to[0], iw * self.resize_to[1]
         else:  # `resize_to`: tuple[int, int]
             oh, ow = self.resize_to
 
-        if theta == 0 and (ph, pw) == (ih, iw) and (oh, ow) == (ih, iw) and not (hflip or vflip):
+        if (
+            theta == 0
+            and (ph, pw) == (ih, iw)
+            and (oh, ow) == (ih, iw)
+            and not (hflip or vflip)
+        ):
             M = None
-            transformed = dict(image=image, word_bboxes=word_bboxes,
-                               by_word_char_bboxes=by_word_char_bboxes, masks=masks)
+            transformed = dict(
+                image=image,
+                word_bboxes=word_bboxes,
+                by_word_char_bboxes=by_word_char_bboxes,
+                masks=masks,
+            )
         else:
             dst = np.array([[0, 0], [ow, 0], [ow, oh], [0, oh]], dtype=np.float32)
             if patch_quad is not None:
@@ -308,14 +400,26 @@ class GeoTransformation:
                     pad = int(ow * ih / oh) - iw
                     off = npr.randint(pad + 1)  # offset
                     src = np.array(
-                        [[-off, 0], [iw + pad - off, 0], [iw + pad - off, ih], [-off, ih]],
-                        dtype=np.float32)
+                        [
+                            [-off, 0],
+                            [iw + pad - off, 0],
+                            [iw + pad - off, ih],
+                            [-off, ih],
+                        ],
+                        dtype=np.float32,
+                    )
                 else:
                     pad = int(oh * iw / ow) - ih
                     off = npr.randint(pad + 1)  # offset
                     src = np.array(
-                        [[0, -off], [iw, -off], [iw, ih + pad - off], [0, ih + pad - off]],
-                        dtype=np.float32)
+                        [
+                            [0, -off],
+                            [iw, -off],
+                            [iw, ih + pad - off],
+                            [0, ih + pad - off],
+                        ],
+                        dtype=np.float32,
+                    )
 
             if hflip:
                 src = src[[1, 0, 3, 2]]
@@ -323,41 +427,99 @@ class GeoTransformation:
                 src = src[[3, 2, 1, 0]]
 
             M = cv2.getPerspectiveTransform(src, dst)
-            transformed = transform_by_matrix(M, image=image, oh=oh, ow=ow, word_bboxes=word_bboxes,
-                                              by_word_char_bboxes=by_word_char_bboxes, masks=masks)
+            transformed = transform_by_matrix(
+                M,
+                image=image,
+                oh=oh,
+                ow=ow,
+                word_bboxes=word_bboxes,
+                by_word_char_bboxes=by_word_char_bboxes,
+                masks=masks,
+            )
 
         found_randomly = self.random_translate and patch_quad is not None
 
-        return dict(found_randomly=found_randomly, num_trials=num_trials, matrix=M, **transformed)
+        return dict(
+            found_randomly=found_randomly,
+            num_trials=num_trials,
+            matrix=M,
+            **transformed,
+        )
 
 
 class ComposedTransformation:
     def __init__(
         self,
-        rotate_anchors=None, rotate_range=None,
-        crop_aspect_ratio=None, crop_size=None, crop_size_by='longest', hflip=False, vflip=False,
-        random_translate=False, min_image_overlap=0, min_bbox_overlap=0, min_bbox_count=0,
+        rotate_anchors=None,
+        rotate_range=None,
+        crop_aspect_ratio=None,
+        crop_size=None,
+        crop_size_by="longest",
+        hflip=False,
+        vflip=False,
+        random_translate=False,
+        min_image_overlap=0,
+        min_bbox_overlap=0,
+        min_bbox_count=0,
         allow_partial_occurrence=True,
-        resize_to=None, keep_aspect_ratio=False, resize_based_on='longest', max_random_trials=100,
-        brightness=0, contrast=0, saturation=0, hue=0, RandomBrightnessContrast = True, GaussNoise=True,CLAHE=True,
-        normalize=False, mean=None, std=None, to_tensor=False
+        resize_to=None,
+        keep_aspect_ratio=False,
+        resize_based_on="longest",
+        max_random_trials=100,
+        brightness=0,
+        contrast=0,
+        saturation=0,
+        hue=0,
+        RandomBrightnessContrast=True,
+        GaussNoise=True,
+        CLAHE=True,
+        normalize=False,
+        mean=None,
+        std=None,
+        to_tensor=False,
     ):
         self.geo_transform_fn = GeoTransformation(
-            rotate_anchors=rotate_anchors, rotate_range=rotate_range,
-            crop_aspect_ratio=crop_aspect_ratio, crop_size=crop_size, crop_size_by=crop_size_by,
-            hflip=hflip, vflip=vflip, random_translate=random_translate,
-            min_image_overlap=min_image_overlap, min_bbox_overlap=min_bbox_overlap,
-            min_bbox_count=min_bbox_count, allow_partial_occurrence=allow_partial_occurrence,
-            resize_to=resize_to, keep_aspect_ratio=keep_aspect_ratio,
-            resize_based_on=resize_based_on, max_random_trials=max_random_trials)
+            rotate_anchors=rotate_anchors,
+            rotate_range=rotate_range,
+            crop_aspect_ratio=crop_aspect_ratio,
+            crop_size=crop_size,
+            crop_size_by=crop_size_by,
+            hflip=hflip,
+            vflip=vflip,
+            random_translate=random_translate,
+            min_image_overlap=min_image_overlap,
+            min_bbox_overlap=min_bbox_overlap,
+            min_bbox_count=min_bbox_count,
+            allow_partial_occurrence=allow_partial_occurrence,
+            resize_to=resize_to,
+            keep_aspect_ratio=keep_aspect_ratio,
+            resize_based_on=resize_based_on,
+            max_random_trials=max_random_trials,
+        )
 
         alb_fns = []
-        alb_fns.append(A.OneOf([A.Emboss(strength=(0.2, 0.4), p=1),A.Sharpen(alpha=(0.2, 0.4), p=1)], p=0.85))
+        alb_fns.append(
+            A.OneOf(
+                [A.Emboss(strength=(0.2, 0.4), p=1), A.Sharpen(alpha=(0.2, 0.4), p=1)],
+                p=0.85,
+            )
+        )
         if brightness > 0 or contrast > 0 or saturation > 0 or hue > 0:
-            alb_fns.append(A.ColorJitter(
-                brightness=brightness, contrast=contrast, saturation=saturation, hue=hue, p=0.5))
+            alb_fns.append(
+                A.ColorJitter(
+                    brightness=brightness,
+                    contrast=contrast,
+                    saturation=saturation,
+                    hue=hue,
+                    p=0.5,
+                )
+            )
         if RandomBrightnessContrast == True:
-            alb_fns.append(A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.15, p=0.5))
+            alb_fns.append(
+                A.RandomBrightnessContrast(
+                    brightness_limit=0.1, contrast_limit=0.15, p=0.5
+                )
+            )
         if GaussNoise == True:
             alb_fns.append(A.GaussNoise(p=0.2))
 
@@ -367,9 +529,9 @@ class ComposedTransformation:
         if normalize:
             kwargs = dict()
             if mean is not None:
-                kwargs['mean'] = mean
+                kwargs["mean"] = mean
             if std is not None:
-                kwargs['std'] = std
+                kwargs["std"] = std
             alb_fns.append(A.Normalize(**kwargs))
 
         if to_tensor:
@@ -377,24 +539,41 @@ class ComposedTransformation:
 
         self.alb_transform_fn = A.Compose(alb_fns)
 
-    def __call__(self, image, word_bboxes=[], by_word_char_bboxes=[], masks=[], height_pad_to=None,
-                 width_pad_to=None):
+    def __call__(
+        self,
+        image,
+        word_bboxes=[],
+        by_word_char_bboxes=[],
+        masks=[],
+        height_pad_to=None,
+        width_pad_to=None,
+    ):
         # TODO Seems that normalization should be performed before padding.
 
-        geo_result = self.geo_transform_fn(image, word_bboxes=word_bboxes,
-                                           by_word_char_bboxes=by_word_char_bboxes, masks=masks)
+        geo_result = self.geo_transform_fn(
+            image,
+            word_bboxes=word_bboxes,
+            by_word_char_bboxes=by_word_char_bboxes,
+            masks=masks,
+        )
 
         if height_pad_to is not None or width_pad_to is not None:
-            min_height = height_pad_to or geo_result['image'].shape[0]
-            min_width = width_pad_to or geo_result['image'].shape[1]
-            alb_transform_fn = A.Compose([
-                A.PadIfNeeded(min_height=min_height, min_width=min_width,
-                              border_mode=cv2.BORDER_CONSTANT,
-                              position=A.PadIfNeeded.PositionType.TOP_LEFT),
-                self.alb_transform_fn])
+            min_height = height_pad_to or geo_result["image"].shape[0]
+            min_width = width_pad_to or geo_result["image"].shape[1]
+            alb_transform_fn = A.Compose(
+                [
+                    A.PadIfNeeded(
+                        min_height=min_height,
+                        min_width=min_width,
+                        border_mode=cv2.BORDER_CONSTANT,
+                        position=A.PadIfNeeded.PositionType.TOP_LEFT,
+                    ),
+                    self.alb_transform_fn,
+                ]
+            )
         else:
             alb_transform_fn = self.alb_transform_fn
-        final_result = alb_transform_fn(image=geo_result['image'])
-        del geo_result['image']
+        final_result = alb_transform_fn(image=geo_result["image"])
+        del geo_result["image"]
 
-        return dict(image=final_result['image'], **geo_result)
+        return dict(image=final_result["image"], **geo_result)
