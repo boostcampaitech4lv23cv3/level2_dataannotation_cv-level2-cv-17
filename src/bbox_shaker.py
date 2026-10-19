@@ -80,7 +80,7 @@ def shake_bbox(points, width, height, ratio=0.125):
 
 
 def do_shaking(anno_path, ratio, suffix):
-    ufo = json.load(open(anno_path, "r"))
+    ufo = json.load(open(anno_path))
 
     for image_name in tqdm(ufo["images"]):
         image = ufo["images"][image_name]
