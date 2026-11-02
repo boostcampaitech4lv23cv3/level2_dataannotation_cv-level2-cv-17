@@ -44,10 +44,10 @@ def rotate_bbox(bbox, theta, anchor=None):
 def calc_error_from_rect(bbox):
     """Calculate the difference between the vertices orientation and default orientation
 
-    Default orientation is 
-        x1y1 : left-top, 
-        x2y2 : right-top, 
-        x3y3 : right-bot, 
+    Default orientation is
+        x1y1 : left-top,
+        x2y2 : right-top,
+        x3y3 : right-bot,
         x4y4 : left-bot.
     """
     x_min, y_min = np.min(bbox, axis=0)
@@ -105,7 +105,7 @@ def get_rbox(bbox):
 
 
 def warp_bbox_into_rbox(image, bbox, rbox):
-    original_size = [pix for pix in image.shape[:2]]
+    original_size = [*image.shape[:2]]
 
     bbox_points = np.array(bbox, np.float32)
     rbox_points = np.array(rbox, np.float32)
@@ -147,7 +147,7 @@ def warp_dataset(in_anno_path, in_data_dir, suffix):
     out_anno = {"images": dict()}
 
     # List image names
-    image_names = [name for name in in_anno["images"]]
+    image_names = [*in_anno["images"]]
 
     # Make directory to save new images
     if in_data_dir.endswith("/"):
